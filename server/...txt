@@ -1,0 +1,19 @@
+server/
+    alembic/              # Миграции базы данных
+    app/
+        dao/             # Data Access Object (DAO) — слой для работы с базой данных
+            base.py       # Базовый класс для DAO
+        real_estates/     # Модуль для работы с недвижимостью (пока не реализован)
+            models.py     # Модели SQLAlchemy для недвижимости
+            routes.py    # Роутеры FastAPI для недвижимости
+            schemas.py    # Pydantic-схемы для валидации данных
+        users/           # Модуль для работы с пользователями
+            auth.py       # Логика аутентификации и хеширования паролей
+            dao.py        # DAO для работы с пользователями
+            dependencies.py # Зависимости для FastAPI (например, авторизация)
+            models.py     # Модели SQLAlchemy для пользователей
+            router.py     # Роутеры FastAPI для пользователей
+            schemas.py    # Pydantic-схемы для валидации данных
+        config.py         # Конфигурация приложения (настройки из .env)
+        database.py       # Настройка базы данных и SQLAlchemy
+        main.py           # Точка входа в приложение

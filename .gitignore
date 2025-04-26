@@ -1,0 +1,13 @@
+# Python (server)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+venv/
+
+# Node.js (frontend)
+node_modules/
+dist/
+.DS_Store
+.env.local
