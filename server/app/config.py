@@ -19,7 +19,7 @@ settings = Settings()
 
 
 def get_db_url():
-    return (f"postgresql://postgress:gEw0o9ZAit42o6NHnkChICvm2rZbWO55@dpg-d06lgcbuibrs73ene9c0-a/kvartplata")
+    return (f"postgresql+asyncpg://postgress:gEw0o9ZAit42o6NHnkChICvm2rZbWO55@dpg-d06lgcbuibrs73ene9c0-a.oregon-postgres.render.com/kvartplata?ssl=require")
 
 
 def get_auth_data():
