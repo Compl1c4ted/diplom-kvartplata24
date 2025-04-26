@@ -52,10 +52,3 @@ app.include_router(receipts_router)
 # app.include_router(meters.router, prefix="/meters", tags=["Meters"])
 # app.include_router(bills.router, prefix="/bills", tags=["Bills"])
 # app.include_router(payments.router, prefix="/payments", tags=["Payments"])
-
-
-if __name__ == "__main__":
-    import uvicorn
-    import os
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port)
