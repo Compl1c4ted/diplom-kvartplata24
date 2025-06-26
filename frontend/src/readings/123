@@ -1,0 +1,68 @@
+// import React, { useEffect, useState } from 'react';
+// import { Link } from 'react-router-dom';
+// import ReadingServiceAPI from './ReadingAPI';
+
+// interface MeterCardProps {
+//   title: string;
+//   meterId: string;
+// }
+
+// const MeterCard: React.FC<MeterCardProps> = ({ title, meterId }) => {
+//   const [lastReading, setLastReading] = useState<any>(null);
+//   const [isLoading, setIsLoading] = useState(true);
+//   const [error, setError] = useState<string | null>(null);
+
+//   // Загружаем последнее показание при загрузке компонента
+//   useEffect(() => {
+//     const fetchLastReading = async () => {
+//       try {
+//         const result = await ReadingServiceAPI.getLastReading(meterId);
+//         if (result.status === 'success') {
+//           setLastReading(result.data.last_reading);
+//         } else {
+//           setError(result.message || 'Ошибка при загрузке последнего показания');
+//         }
+//       } catch (error) {
+//         setError('Ошибка при загрузке последнего показания');
+//       } finally {
+//         setIsLoading(false);
+//       }
+//     };
+
+//     fetchLastReading();
+//   }, [meterId]);
+
+//   if (isLoading) {
+//     return <p>Загрузка...</p>;
+//   }
+
+//   if (error) {
+//     return <p>{error}</p>;
+//   }
+
+//   return (
+//     <Link
+//       to={`/meters/${encodeURIComponent(meterId)}`}
+//       className="block p-4 bg-white border rounded-lg shadow-md hover:bg-gray-100 mb-4"
+//     >
+//       <h5 className="mb-2 text-lg font-bold tracking-tight text-gray-900">{title}</h5>
+//       {lastReading ? (
+//         <>
+//           <p className="font-normal text-gray-700">
+//             Текущее показание: {lastReading.current_value}
+//           </p>
+//           <p className="font-normal text-gray-700">
+//             Предыдущее показание: {lastReading.previous_value || 'Нет данных'}
+//           </p>
+//           <p className="font-normal text-gray-700">
+//             Дата подачи: {new Date(lastReading.updated_at).toLocaleString()}
+//           </p>
+//         </>
+//       ) : (
+//         <p className="font-normal text-gray-700">Нет данных о показаниях</p>
+//       )}
+//     </Link>
+//   );
+// };
+
+// export default MeterCard;
