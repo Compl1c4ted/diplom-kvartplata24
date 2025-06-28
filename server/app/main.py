@@ -25,10 +25,10 @@ async def startup_event():
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://diplom-kvartplata24.vercel.app/"],
+    allow_origins=["https://diplom-kvartplata24.vercel.app"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Разрешаем все методы (GET, POST и т.д.)
-    allow_headers=["*"],  # Разрешаем все заголовки
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 @app.exception_handler(HTTPException)
