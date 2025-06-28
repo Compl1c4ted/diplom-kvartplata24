@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-  baseURL: 'http://127.0.0.1:8000',
+  baseURL: 'https://diplom-kvartplata24.onrender.com',
 });
 
 // Очередь для запросов, ожидающих обновления токена
@@ -68,7 +68,7 @@ function logoutUser() {
 
 async function checkTimeSync() {
   try {
-    const response = await axios.get('http://127.0.0.1:8000/user/server-time/');
+    const response = await axios.get('https://diplom-kvartplata24.onrender.com/user/server-time/');
     const serverTime = new Date(response.data.server_time).getTime();
     const clientTime = Date.now();
     const diff = Math.abs(serverTime - clientTime);
