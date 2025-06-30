@@ -25,7 +25,10 @@ async def startup_event():
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://diplom-kvartplata24.vercel.app"],
+    allow_origins=[
+        "https://diplom-kvartplata24.vercel.app",
+        "http://localhost:3000"  # Для локальной разработки
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

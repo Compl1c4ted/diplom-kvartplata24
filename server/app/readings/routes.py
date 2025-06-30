@@ -41,45 +41,23 @@ async def get_my_readings(
 @router.post("/add-reading/", response_model=SReadingWithReceiptResponse)
 async def add_reading(
     reading_data: SReadingCreate,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
-    """Добавить показание"""
+    """Добавление нового показания"""
     try:
-        # Находим счетчик
-        meter = await ReadingsDAO.find_meter_by_id(reading_data.meter_id)
-        if not meter:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Счетчик не найден"
-            )
-
-        # Проверяем права доступа
-        property = await PropertiesDAO.find_one_or_none(id=meter.property_id, user_id=current_user.id)
-        if not property:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="У вас нет доступа к этому счетчику"
-            )
-
-        # Добавляем показание
         result = await ReadingsDAO.add_new_reading(
             meter_id=reading_data.meter_id,
-            current_value=reading_data.current_value
+            current_value=reading_data.current_value,
+            user_id=current_user.id,
+            session=db
         )
-        
         return result
-        
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Ошибка при добавлении показания: {e}"
-        )
-
+        logger.error(f"Error adding reading: {str(e)}")
+        raise HTTPException(status_code=500, detail="Ошибка при добавлении показания")
 # @router.post("/add-reading/")
 # async def add_reading(
 #     reading_data: SReadingCreate,

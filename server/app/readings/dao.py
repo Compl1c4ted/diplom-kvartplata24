@@ -1,8 +1,11 @@
 from sqlalchemy import select, and_, extract
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from app.database import async_session_maker
 from app.readings.models import Reading
 from app.receipts.dao import ReceiptsDAO
+from app.properties.models import Property
 from app.meters.models import Meter
 from app.tariffs.dao import TariffDAO
 from app.dao.base import BaseDAO
@@ -15,6 +18,25 @@ logger = logging
 
 class ReadingsDAO(BaseDAO):
     model = Reading
+
+    @classmethod
+    async def _get_meter_with_check(
+        cls, 
+        meter_id: int, 
+        user_id: int, 
+        session: AsyncSession
+    ):
+        """Получаем счетчик с проверкой прав доступа"""
+        meter = await session.execute(
+            select(Meter)
+            .options(selectinload(Meter.property))
+            .where(Meter.id == meter_id)
+        )
+        meter = meter.scalar_one_or_none()
+        
+        if not meter or meter.property.user_id != user_id:
+            raise ValueError("Счетчик не найден или нет доступа")
+        return meter
 
     @classmethod
     async def find_meter_by_id(cls, meter_id: int):
@@ -73,38 +95,55 @@ class ReadingsDAO(BaseDAO):
     #         return new_reading
 
     @classmethod
-    async def add_new_reading(cls, meter_id: int, current_value: float, user_id: int):
-        async with async_session_maker() as session:
-            try:
-                # Получаем счетчик с проверкой прав
-                meter = await cls._get_meter_with_check(meter_id, user_id, session)
-                
-                # Рассчитываем стоимость
-                previous_value = meter.last_reading_value or 0
-                consumption = current_value - previous_value
-                total_cost = consumption * meter.tariff
-                
-                # Создаем запись показаний
-                new_reading = Reading(
-                    meter_id=meter_id,
-                    current_value=current_value,
-                    previous_value=previous_value,
-                    tariff=meter.tariff,
-                    total_cost=total_cost
+    async def add_new_reading(
+        cls, 
+        meter_id: int, 
+        current_value: float, 
+        user_id: int,
+        session: AsyncSession
+    ):
+        """Добавление нового показания с проверкой прав и расчетом стоимости"""
+        try:
+            # Получаем счетчик с проверкой прав
+            meter = await session.execute(
+                select(Meter)
+                .join(Property)
+                .where(
+                    Meter.id == meter_id,
+                    Property.user_id == user_id
                 )
-                session.add(new_reading)
-                
-                # Обновляем последнее значение в счетчике
-                meter.last_reading_value = current_value
-                
-                await session.commit()
-                await session.refresh(new_reading)
-                return new_reading
-                
-            except Exception as e:
-                await session.rollback()
-                logger.error(f"Error adding reading: {str(e)}")
-                raise
+            )
+            meter = meter.scalar_one_or_none()
+            
+            if not meter:
+                raise ValueError("Счетчик не найден или нет доступа")
+
+            # Рассчитываем потребление и стоимость
+            previous_value = meter.last_reading_value or 0
+            consumption = Decimal(current_value) - previous_value
+            total_cost = consumption * meter.tariff
+
+            # Создаем запись показания
+            new_reading = Reading(
+                meter_id=meter_id,
+                current_value=current_value,
+                previous_value=previous_value,
+                tariff=meter.tariff,
+                total_cost=total_cost
+            )
+            session.add(new_reading)
+
+            # Обновляем последнее показание в счетчике
+            meter.last_reading_value = current_value
+            await session.commit()
+            await session.refresh(new_reading)
+            
+            return new_reading
+
+        except Exception as e:
+            await session.rollback()
+            logger.error(f"Error adding reading: {str(e)}")
+            raise
 
     @classmethod
     async def get_readings_by_property(cls, property_id: int):
