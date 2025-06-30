@@ -13,8 +13,8 @@ interface Receipt {
   transaction_number: string;
   amount: number;
   status: 'pending' | 'paid' | 'overdue';
-  period_start: string;
-  period_end: string;
+  updated_at: string;
+  created_at: string;
 }
 
 export const ReceiptsPage = () => {
@@ -249,7 +249,7 @@ export const ReceiptsPage = () => {
                         <div className="flex justify-between">
                           <span className="text-gray-600">Период:</span>
                           <span className="text-gray-800">
-                            {formatDate(receipt.period_start)} — {formatDate(receipt.period_end)}
+                            {formatDate(receipt.created_at)} — {formatDate(receipt.updated_at)}
                           </span>
                         </div>
                       </div>
