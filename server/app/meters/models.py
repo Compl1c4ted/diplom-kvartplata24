@@ -11,8 +11,6 @@ class Meter(Base):
     meter_number = Column(String, nullable=False, unique=True)
     tariff = Column(Numeric(10, 2), nullable=False)  # Добавляем тариф
     last_reading_value = Column(Numeric(10, 2), nullable=True)  # Последнее показание
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     property = relationship("Property", back_populates="meters")
     readings = relationship("Reading", back_populates="meter")
