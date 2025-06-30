@@ -11,7 +11,7 @@ interface Property {
 interface Receipt {
   id: number;
   transaction_number: string;
-  amount: number | string; // Разрешаем оба типа
+  amount: number;
   status: 'pending' | 'paid' | 'overdue';
   period_start: string;
   period_end: string;
@@ -26,57 +26,6 @@ export const ReceiptsPage = () => {
     receipts: false
   });
   const [error, setError] = useState<string | null>(null);
-
-  // Защищенное форматирование суммы
-  const formatAmount = (amount: unknown): string => {
-    try {
-      const num = typeof amount === 'number' 
-        ? amount 
-        : typeof amount === 'string'
-          ? parseFloat(amount.replace(',', '.'))
-          : Number(amount);
-      
-      return isNaN(num) ? '0.00' : num.toFixed(2);
-    } catch {
-      return '0.00';
-    }
-  };
-
-  // Форматирование даты
-  const formatDate = (dateString: string) => {
-    try {
-      const options: Intl.DateTimeFormatOptions = { 
-        day: '2-digit', 
-        month: '2-digit', 
-        year: 'numeric' 
-      };
-      return new Date(dateString).toLocaleDateString('ru-RU', options);
-    } catch {
-      return 'Некорректная дата';
-    }
-  };
-
-  // Стили для статусов
-  const statusStyles = {
-    pending: {
-      bg: 'bg-orange-100',
-      text: 'text-orange-800',
-      badge: 'badge-warning',
-      label: 'Ожидает оплаты'
-    },
-    paid: {
-      bg: 'bg-green-100',
-      text: 'text-green-800',
-      badge: 'badge-success',
-      label: 'Оплачено'
-    },
-    overdue: {
-      bg: 'bg-red-100',
-      text: 'text-red-800',
-      badge: 'badge-error',
-      label: 'Просрочено'
-    }
-  };
 
   // Загрузка объектов недвижимости
   useEffect(() => {
@@ -117,7 +66,7 @@ export const ReceiptsPage = () => {
           // Валидация и нормализация данных
           const validatedReceipts = (response.data || []).map(receipt => ({
             ...receipt,
-            amount: typeof receipt.amount === 'number' ? receipt.amount : 0
+            amount: Number(receipt.amount) || 0
           }));
           setReceipts(validatedReceipts);
         } else {
@@ -132,6 +81,48 @@ export const ReceiptsPage = () => {
 
     loadReceipts();
   }, [selectedPropertyId]);
+
+  // Форматирование суммы
+  const formatAmount = (amount: number) => {
+    return new Intl.NumberFormat('ru-RU', {
+      style: 'decimal',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount);
+  };
+
+  // Форматирование даты
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch {
+      return dateString; // Возвращаем исходную строку, если не удалось распарсить
+    }
+  };
+
+  // Стили для статусов
+  const statusStyles = {
+    pending: {
+      bg: 'bg-orange-500',
+      text: 'text-white',
+      label: 'Ожидает оплаты'
+    },
+    paid: {
+      bg: 'bg-green-500',
+      text: 'text-white',
+      label: 'Оплачено'
+    },
+    overdue: {
+      bg: 'bg-red-500',
+      text: 'text-white',
+      label: 'Просрочено'
+    }
+  };
 
   const handleDownloadPdf = async (receiptId: number) => {
     try {
@@ -191,14 +182,14 @@ export const ReceiptsPage = () => {
 
   return (
     <div className="container mx-auto p-4 pb-20">
-      <h1 className="text-3xl font-bold mb-6 text-primary">Мои квитанции</h1>
+      <h1 className="text-3xl font-bold mb-6 text-gray-800">Мои квитанции</h1>
       
-      <div className="mb-8 bg-base-200 p-4 rounded-lg">
-        <label className="block text-lg font-semibold mb-2 text-base-content">Выберите объект:</label>
+      <div className="mb-8 bg-gray-50 p-6 rounded-lg shadow-sm">
+        <label className="block text-lg font-semibold mb-3 text-gray-700">Выберите объект:</label>
         <select
           value={selectedPropertyId || ''}
           onChange={(e) => setSelectedPropertyId(Number(e.target.value))}
-          className="select select-bordered w-full max-w-xs bg-white"
+          className="select select-bordered w-full max-w-md bg-white border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary"
         >
           {properties.map(property => (
             <option key={property.id} value={property.id}>
@@ -210,7 +201,7 @@ export const ReceiptsPage = () => {
 
       {selectedPropertyId && (
         <div className="mb-16">
-          <h2 className="text-xl font-semibold mb-4 text-base-content">
+          <h2 className="text-xl font-semibold mb-6 text-gray-700">
             Квитанции для выбранного объекта
             {loading.receipts && (
               <span className="loading loading-spinner loading-sm ml-2"></span>
@@ -218,7 +209,7 @@ export const ReceiptsPage = () => {
           </h2>
           
           {receipts.length === 0 ? (
-            <div className="alert alert-info shadow-lg">
+            <div className="alert alert-info shadow-lg max-w-2xl">
               <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
@@ -232,42 +223,44 @@ export const ReceiptsPage = () => {
                 return (
                   <div 
                     key={receipt.id} 
-                    className={`card shadow-lg ${status.bg} ${status.text} hover:shadow-xl transition-shadow`}
+                    className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition-shadow"
                   >
-                    <div className="card-body">
-                      <div className="flex justify-between items-start">
-                        <h3 className="card-title text-lg">Квитанция #{receipt.id}</h3>
-                        <span className={`badge ${status.badge} text-white`}>
+                    <div className="p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <h3 className="text-xl font-bold text-gray-800">Квитанция #{receipt.id}</h3>
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${status.bg} ${status.text}`}>
                           {status.label}
                         </span>
                       </div>
                       
-                      <div className="divider my-2"></div>
-                      
-                      <div className="space-y-2">
-                        <p>
-                          <span className="font-bold">Номер:</span> 
-                          <span className="ml-2 font-mono">{receipt.transaction_number}</span>
-                        </p>
-                        <p>
-                          <span className="font-bold">Сумма:</span> 
-                          <span className="ml-2 font-mono text-lg font-bold">
+                      <div className="space-y-4">
+                        <div className="flex justify-between border-b border-gray-100 pb-2">
+                          <span className="text-gray-600">Номер:</span>
+                          <span className="font-medium text-gray-800">{receipt.transaction_number}</span>
+                        </div>
+                        
+                        <div className="flex justify-between border-b border-gray-100 pb-2">
+                          <span className="text-gray-600">Сумма:</span>
+                          <span className="font-bold text-lg text-gray-800">
                             {formatAmount(receipt.amount)} ₽
                           </span>
-                        </p>
-                        <p>
-                          <span className="font-bold">Период:</span> 
-                          <span className="ml-2">
+                        </div>
+                        
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Период:</span>
+                          <span className="text-gray-800">
                             {formatDate(receipt.period_start)} — {formatDate(receipt.period_end)}
                           </span>
-                        </p>
+                        </div>
                       </div>
                       
-                      <div className="card-actions justify-end mt-4">
+                      <div className="mt-6 flex justify-end">
                         <button
                           onClick={() => handleDownloadPdf(receipt.id)}
                           className={`btn btn-sm ${
-                            receipt.status === 'paid' ? 'btn-primary' : 'btn-ghost'
+                            receipt.status === 'paid' 
+                              ? 'btn-primary bg-primary hover:bg-primary-dark' 
+                              : 'btn-disabled bg-gray-200 text-gray-500'
                           }`}
                           disabled={receipt.status !== 'paid'}
                         >
