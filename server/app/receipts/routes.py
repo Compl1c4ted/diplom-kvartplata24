@@ -78,13 +78,13 @@ async def create_new_receipt(
     receipt_data: SReceiptCreate, 
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Создать новую квитанцию на основе непогашенных показаний.
-    Сумма рассчитывается автоматически.
-    """
     # Проверяем права доступа к property_id
+    property = await PropertiesDAO.find_one_or_none(id=receipt_data.property_id, user_id=current_user.id)
+    if not property:
+        raise HTTPException(status_code=403, detail="Access denied")
+
     try:
-        receipt = await ReceiptsDAO.create_receipt(receipt_data.property_id)
+        receipt = await ReceiptsDAO.create_auto_receipt(receipt_data.property_id)
         return receipt
     except ValueError as e:
         raise HTTPException(
