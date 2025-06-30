@@ -2,6 +2,7 @@ from datetime import datetime, date
 import random
 from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
 from app.database import async_session_maker
 from app.receipts.models import Receipt
 from app.properties.models import Property
@@ -29,29 +30,49 @@ class ReceiptsDAO:
 
     @classmethod
     async def create_auto_receipt(cls, property_id: int):
-        """Создание автоматической квитанции с уникальным номером"""
+        """Создание автоматической квитанции с расчетом суммы"""
         async with async_session_maker() as session:
             try:
+                # Получаем все неоплаченные показания для property
+                readings = await session.execute(
+                    select(Reading)
+                    .where(
+                        Reading.receipt_id == None,
+                        Reading.meter.has(property_id=property_id)
+                    )
+                )
+                readings = readings.scalars().all()
+                
+                if not readings:
+                    raise ValueError("Нет показаний для создания квитанции")
+                
+                # Считаем общую сумму
+                total_amount = sum(reading.total_cost for reading in readings)
+                
+                # Генерируем уникальный номер
                 transaction_number = await cls.generate_unique_transaction_number()
                 
+                # Создаем квитанцию
                 new_receipt = Receipt(
                     transaction_number=transaction_number,
                     transaction_date=date.today(),
-                    amount=0,  # Временное значение
+                    amount=total_amount,
                     status="pending",
                     paid=False,
                     property_id=property_id
                 )
                 
                 session.add(new_receipt)
+                await session.flush()  # Получаем ID новой квитанции
+                
+                # Привязываем показания к квитанции
+                for reading in readings:
+                    reading.receipt_id = new_receipt.id
+                
                 await session.commit()
                 await session.refresh(new_receipt)
                 return new_receipt
                 
-            except IntegrityError as e:
-                await session.rollback()
-                logger.error(f"Integrity error creating receipt: {str(e)}")
-                raise ValueError("Ошибка создания квитанции: дублирование номера")
             except Exception as e:
                 await session.rollback()
                 logger.error(f"Error creating receipt: {str(e)}")
@@ -77,16 +98,30 @@ class ReceiptsDAO:
 
     @classmethod
     async def mark_as_paid(cls, receipt_id: int, user_id: int):
-        """Пометить квитанцию как оплаченную"""
+        """Пометить квитанцию как оплаченную и пересчитать сумму"""
         async with async_session_maker() as session:
-            # Проверяем права доступа
-            receipt = await cls.get_receipt_with_property(receipt_id)
+            # Получаем квитанцию с property и показаниями
+            receipt = await session.execute(
+                select(Receipt)
+                .options(
+                    selectinload(Receipt.property),
+                    selectinload(Receipt.readings)
+                )
+                .where(Receipt.id == receipt_id)
+            )
+            receipt = receipt.scalar_one_or_none()
+            
             if not receipt or receipt.property.user_id != user_id:
                 return None
 
+            # Пересчитываем сумму на основе показаний
+            total_amount = sum(reading.total_cost for reading in receipt.readings)
+            
+            # Обновляем квитанцию
             receipt.status = "paid"
             receipt.paid = True
             receipt.payment_date = datetime.now()
+            receipt.amount = total_amount
             
             await session.commit()
             await session.refresh(receipt)

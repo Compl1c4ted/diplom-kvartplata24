@@ -8,6 +8,9 @@ from app.tariffs.dao import TariffDAO
 from app.dao.base import BaseDAO
 from decimal import Decimal
 from datetime import datetime
+import logging
+
+logger = logging
 
 
 class ReadingsDAO(BaseDAO):
@@ -70,61 +73,38 @@ class ReadingsDAO(BaseDAO):
     #         return new_reading
 
     @classmethod
-    async def add_new_reading(cls, meter_id: int, current_value: float):
+    async def add_new_reading(cls, meter_id: int, current_value: float, user_id: int):
         async with async_session_maker() as session:
-            # Находим счетчик по id
-            meter = await cls.find_meter_by_id(meter_id)
-            if not meter:
-                raise ValueError("Счетчик не найден")
-
-            # Получаем тариф для данного типа счетчика
-            tariff = await TariffDAO.find_by_type(meter.type)
-            if not tariff:
-                raise ValueError(f"Тариф для типа счетчика '{meter.type}' не найден")
-
-            # Получаем последнее показание для счетчика
-            last_reading = await cls.get_last_reading(meter_id)
-
-            # Рассчитываем предыдущее показание
-            previous_value = last_reading.current_value if last_reading else None
-
-            # Преобразуем current_value в Decimal
-            current_value_decimal = Decimal(str(current_value))
-
-            # Рассчитываем общую стоимость
-            if previous_value is not None:
-                total_cost = (current_value_decimal - previous_value) * tariff.rate
-            else:
-                total_cost = Decimal('0')
-
-            # Создаем новое показание
-            new_reading = Reading(
-                meter_id=meter_id,
-                current_value=current_value_decimal,
-                previous_value=previous_value,
-                tariff=tariff.rate,
-                total_cost=total_cost,
-            )
-
-            session.add(new_reading)
-            await session.commit()
-            await session.refresh(new_reading)
-
-            # Проверяем, все ли счетчики получили показания
-            all_meters_have_readings = await cls.check_all_meters_have_readings(meter.property_id)
-            
-            result = {
-                "reading": new_reading,
-                "message": "Показание добавлено. Ожидаются показания с других счетчиков"
-            }
-            
-            if all_meters_have_readings:
-                # Если все показания переданы - создаем квитанцию
-                receipt = await ReceiptsDAO.create_auto_receipt(meter.property_id)
-                result["receipt"] = receipt
-                result["message"] = "Все показания переданы. Квитанция создана автоматически"
-
-            return result
+            try:
+                # Получаем счетчик с проверкой прав
+                meter = await cls._get_meter_with_check(meter_id, user_id, session)
+                
+                # Рассчитываем стоимость
+                previous_value = meter.last_reading_value or 0
+                consumption = current_value - previous_value
+                total_cost = consumption * meter.tariff
+                
+                # Создаем запись показаний
+                new_reading = Reading(
+                    meter_id=meter_id,
+                    current_value=current_value,
+                    previous_value=previous_value,
+                    tariff=meter.tariff,
+                    total_cost=total_cost
+                )
+                session.add(new_reading)
+                
+                # Обновляем последнее значение в счетчике
+                meter.last_reading_value = current_value
+                
+                await session.commit()
+                await session.refresh(new_reading)
+                return new_reading
+                
+            except Exception as e:
+                await session.rollback()
+                logger.error(f"Error adding reading: {str(e)}")
+                raise
 
     @classmethod
     async def get_readings_by_property(cls, property_id: int):
