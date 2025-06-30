@@ -11,7 +11,7 @@ interface Property {
 interface Receipt {
   id: number;
   transaction_number: string;
-  amount: number;
+  amount: number | string; // Разрешаем оба типа
   status: 'pending' | 'paid' | 'overdue';
   period_start: string;
   period_end: string;
@@ -27,7 +27,58 @@ export const ReceiptsPage = () => {
   });
   const [error, setError] = useState<string | null>(null);
 
-  // Загружаем список объектов недвижимости
+  // Защищенное форматирование суммы
+  const formatAmount = (amount: unknown): string => {
+    try {
+      const num = typeof amount === 'number' 
+        ? amount 
+        : typeof amount === 'string'
+          ? parseFloat(amount.replace(',', '.'))
+          : Number(amount);
+      
+      return isNaN(num) ? '0.00' : num.toFixed(2);
+    } catch {
+      return '0.00';
+    }
+  };
+
+  // Форматирование даты
+  const formatDate = (dateString: string) => {
+    try {
+      const options: Intl.DateTimeFormatOptions = { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric' 
+      };
+      return new Date(dateString).toLocaleDateString('ru-RU', options);
+    } catch {
+      return 'Некорректная дата';
+    }
+  };
+
+  // Стили для статусов
+  const statusStyles = {
+    pending: {
+      bg: 'bg-orange-100',
+      text: 'text-orange-800',
+      badge: 'badge-warning',
+      label: 'Ожидает оплаты'
+    },
+    paid: {
+      bg: 'bg-green-100',
+      text: 'text-green-800',
+      badge: 'badge-success',
+      label: 'Оплачено'
+    },
+    overdue: {
+      bg: 'bg-red-100',
+      text: 'text-red-800',
+      badge: 'badge-error',
+      label: 'Просрочено'
+    }
+  };
+
+  // Загрузка объектов недвижимости
   useEffect(() => {
     const loadProperties = async () => {
       try {
@@ -51,7 +102,7 @@ export const ReceiptsPage = () => {
     loadProperties();
   }, []);
 
-  // Загружаем квитанции при изменении выбранного объекта
+  // Загрузка квитанций с валидацией данных
   useEffect(() => {
     if (!selectedPropertyId) return;
 
@@ -63,7 +114,12 @@ export const ReceiptsPage = () => {
         const response = await ReceiptServiceAPI.getReceiptsByProperty(selectedPropertyId);
         
         if (response.status === 'success') {
-          setReceipts(response.data || []);
+          // Валидация и нормализация данных
+          const validatedReceipts = (response.data || []).map(receipt => ({
+            ...receipt,
+            amount: typeof receipt.amount === 'number' ? receipt.amount : 0
+          }));
+          setReceipts(validatedReceipts);
         } else {
           setError(response.message || 'Ошибка загрузки квитанций');
         }
@@ -93,43 +149,6 @@ export const ReceiptsPage = () => {
       }
     } catch (error) {
       setError('Ошибка при скачивании PDF');
-    }
-  };
-
-  // Форматирование суммы - обрезаем лишние нули
-  const formatAmount = (amount: number) => {
-    return amount.toFixed(2).replace(/\.?0+$/, '');
-  };
-
-  // Форматирование даты
-  const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric' 
-    };
-    return new Date(dateString).toLocaleDateString('ru-RU', options);
-  };
-
-  // Стили для статусов
-  const statusStyles = {
-    pending: {
-      bg: 'bg-orange-100',
-      text: 'text-orange-800',
-      badge: 'badge-warning',
-      label: 'Ожидает оплаты'
-    },
-    paid: {
-      bg: 'bg-green-100',
-      text: 'text-green-800',
-      badge: 'badge-success',
-      label: 'Оплачено'
-    },
-    overdue: {
-      bg: 'bg-red-100',
-      text: 'text-red-800',
-      badge: 'badge-error',
-      label: 'Просрочено'
     }
   };
 
