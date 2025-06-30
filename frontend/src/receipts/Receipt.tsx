@@ -227,7 +227,7 @@ export const ReceiptsPage = () => {
                   >
                     <div className="p-6">
                       <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-xl font-bold text-gray-800">Квитанция #{receipt.id}</h3>
+                        <h3 className="text-xl font-bold text-gray-800">Квитанция</h3>
                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${status.bg} ${status.text}`}>
                           {status.label}
                         </span>
@@ -245,19 +245,11 @@ export const ReceiptsPage = () => {
                             {formatAmount(receipt.amount)} ₽
                           </span>
                         </div>
-                        
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Период:</span>
-                          <span className="text-gray-800">
-                            {formatDate(receipt.created_at)} — {formatDate(receipt.updated_at)}
-                          </span>
-                        </div>
                       </div>
-                      
-                      <div className="mt-6 flex justify-end">
+                      <div className="mt-6">
                         <button
                           onClick={() => handleDownloadPdf(receipt.id)}
-                          className={`btn btn-sm ${
+                          className={`w-full btn btn-sm ${
                             receipt.status === 'paid' 
                               ? 'btn-primary bg-primary hover:bg-primary-dark' 
                               : 'btn-disabled bg-gray-200 text-gray-500'
