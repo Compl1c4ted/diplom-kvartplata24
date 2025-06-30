@@ -20,16 +20,17 @@ class MetersDAO(BaseDAO):
                 meter_number=meter_number
             )
             session.add(new_meter)
-            await session.commit()
-            await session.refresh(new_meter)
+            await session.flush()
 
             initial_reading = Reading(
                 meter_id=new_meter.id,
                 current_value=0.0,
+                previous_value=0.0,
+                tariff=0.0,
+                total_cost=0.0
             )
             session.add(initial_reading)
             await session.commit()
-            await session.refresh(initial_reading)
 
             return new_meter
     
