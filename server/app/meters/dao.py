@@ -2,6 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from app.database import async_session_maker
 from app.meters.models import Meter
+from app.readings.models import Reading
 from app.tariffs.dao import TariffDAO
 from app.dao.base import BaseDAO
 from decimal import Decimal
@@ -21,6 +22,15 @@ class MetersDAO(BaseDAO):
             session.add(new_meter)
             await session.commit()
             await session.refresh(new_meter)
+
+            initial_reading = Reading(
+                meter_id=new_meter.id,
+                current_value=0.0,
+            )
+            session.add(initial_reading)
+            await session.commit()
+            await session.refresh(initial_reading)
+
             return new_meter
     
     @classmethod
