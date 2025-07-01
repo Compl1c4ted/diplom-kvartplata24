@@ -9,7 +9,7 @@ class Meter(Base):
     property_id = Column(Integer, ForeignKey("properties.id"), nullable=False)
     type = Column(String, nullable=False)  # water, electricity, gas
     meter_number = Column(String, nullable=False, unique=True)
-    tariff = Column(Numeric(10, 2), nullable=False)  # Добавляем тариф
+    tariff = Column(Numeric(10, 2), nullable=False)
     last_reading_value = Column(Numeric(10, 2), nullable=True)  # Последнее показание
 
     property = relationship("Property", back_populates="meters")

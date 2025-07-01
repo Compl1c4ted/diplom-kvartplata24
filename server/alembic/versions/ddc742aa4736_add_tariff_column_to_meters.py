@@ -19,13 +19,13 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade():
-    # Сначала добавляем колонку как nullable (может быть пустой)
+    # Сначала добавляем колонку как NULLABLE
     op.add_column('meters', sa.Column('tariff', sa.Numeric(precision=10, scale=2), nullable=True))
     
-    # Устанавливаем дефолтное значение 0 для всех существующих записей
+    # Устанавливаем дефолтное значение для существующих записей
     op.execute("UPDATE meters SET tariff = 0 WHERE tariff IS NULL")
     
-    # Теперь меняем колонку на NOT NULL
+    # Затем меняем на NOT NULL
     op.alter_column('meters', 'tariff', nullable=False)
 
 def downgrade():
