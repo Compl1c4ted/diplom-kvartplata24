@@ -175,37 +175,6 @@ const PaymentPage = () => {
                 </div>
             )}
 
-            {/* Способ оплаты */}
-            {selectedProperty && unpaidReceipts.length > 0 && (
-                <div className="mb-6">
-                    <h2 className="text-lg font-semibold mb-3">Способ оплаты</h2>
-                    
-                    <div className="space-y-2">
-                        <label className="flex items-center p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50">
-                            <input
-                                type="radio"
-                                name="payment"
-                                checked={paymentMethod === 'sbp'}
-                                onChange={() => setPaymentMethod('sbp')}
-                                className="mr-2 h-4 w-4 text-blue-600"
-                            />
-                            <span>Система быстрых платежей (СБП)</span>
-                        </label>
-                        
-                        <label className="flex items-center p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50">
-                            <input
-                                type="radio"
-                                name="payment"
-                                checked={paymentMethod === 'card'}
-                                onChange={() => setPaymentMethod('card')}
-                                className="mr-2 h-4 w-4 text-blue-600"
-                            />
-                            <span>Банковская карта</span>
-                        </label>
-                    </div>
-                </div>
-            )}
-
             {/* Кнопка оплаты */}
             {selectedProperty && unpaidReceipts.length > 0 && (
                 <button
@@ -217,7 +186,7 @@ const PaymentPage = () => {
                             : 'bg-gray-400 cursor-not-allowed'
                     } transition-colors`}
                 >
-                    Оплатить {totalAmount.toFixed(2)} руб.
+                    Рассчитать {totalAmount.toFixed(2)} руб.
                 </button>
             )}
         </div>
