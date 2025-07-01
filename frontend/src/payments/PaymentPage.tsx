@@ -179,7 +179,7 @@ const PaymentPage = () => {
             {selectedProperty && unpaidReceipts.length > 0 && (
                 <button
                     onClick={handlePayment}
-                    className={w-full py-3 px-4 rounded-md text-white font-medium text-lg bg-blue-600 hover:bg-blue-700 shadow-md}
+                    className="w-full py-3 px-4 rounded-md text-white font-medium text-lg bg-blue-600 hover:bg-blue-700 shadow-md"
                     >
                     Рассчитать {totalAmount.toFixed(2)} руб.
                 </button>
