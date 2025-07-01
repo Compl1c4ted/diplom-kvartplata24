@@ -179,13 +179,8 @@ const PaymentPage = () => {
             {selectedProperty && unpaidReceipts.length > 0 && (
                 <button
                     onClick={handlePayment}
-                    disabled={!paymentMethod}
-                    className={`w-full py-3 px-4 rounded-md text-white font-medium text-lg ${
-                        paymentMethod 
-                            ? 'bg-blue-600 hover:bg-blue-700 shadow-md' 
-                            : 'bg-gray-400 cursor-not-allowed'
-                    } transition-colors`}
-                >
+                    className={w-full py-3 px-4 rounded-md text-white font-medium text-lg bg-blue-600 hover:bg-blue-700 shadow-md}
+                    >
                     Рассчитать {totalAmount.toFixed(2)} руб.
                 </button>
             )}
