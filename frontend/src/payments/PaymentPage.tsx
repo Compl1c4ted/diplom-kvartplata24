@@ -62,13 +62,13 @@ const PaymentPage = () => {
 
     // 4. Обработка оплаты
     const handlePayment = async () => {
-        if (!selectedProperty || !paymentMethod || unpaidReceipts.length === 0) return;
+        if (!selectedProperty || unpaidReceipts.length === 0) return;
         
         try {
             // Оплачиваем каждую квитанцию по отдельности
             const paymentResults = await Promise.all(
                 unpaidReceipts.map(receipt => 
-                    PaymentApi.payReceipt(receipt.id, paymentMethod)
+                    PaymentApi.payReceipt(receipt.id, paymentMethod || 'sbp')
                 )
             );
 
@@ -114,7 +114,6 @@ const PaymentPage = () => {
                     onChange={(e) => {
                         const property = properties.find(p => p.id === Number(e.target.value));
                         setSelectedProperty(property || null);
-                        setPaymentMethod(null);
                     }}
                     className="w-full p-2 border border-gray-300 rounded-md"
                 >
@@ -175,49 +174,13 @@ const PaymentPage = () => {
                 </div>
             )}
 
-            {/* Способ оплаты */}
-            {selectedProperty && unpaidReceipts.length > 0 && (
-                <div className="mb-6">
-                    <h2 className="text-lg font-semibold mb-3">Способ оплаты</h2>
-                    
-                    <div className="space-y-2">
-                        <label className="flex items-center p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50">
-                            <input
-                                type="radio"
-                                name="payment"
-                                checked={paymentMethod === 'sbp'}
-                                onChange={() => setPaymentMethod('sbp')}
-                                className="mr-2 h-4 w-4 text-blue-600"
-                            />
-                            <span>Система быстрых платежей (СБП)</span>
-                        </label>
-                        
-                        <label className="flex items-center p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50">
-                            <input
-                                type="radio"
-                                name="payment"
-                                checked={paymentMethod === 'card'}
-                                onChange={() => setPaymentMethod('card')}
-                                className="mr-2 h-4 w-4 text-blue-600"
-                            />
-                            <span>Банковская карта</span>
-                        </label>
-                    </div>
-                </div>
-            )}
-
-            {/* Кнопка оплаты */}
+            {/* Кнопка расчета */}
             {selectedProperty && unpaidReceipts.length > 0 && (
                 <button
                     onClick={handlePayment}
-                    disabled={!paymentMethod}
-                    className={`w-full py-3 px-4 rounded-md text-white font-medium text-lg ${
-                        paymentMethod 
-                            ? 'bg-blue-600 hover:bg-blue-700 shadow-md' 
-                            : 'bg-gray-400 cursor-not-allowed'
-                    } transition-colors`}
+                    className="w-full py-3 px-4 rounded-md text-white font-medium text-lg bg-blue-600 hover:bg-blue-700 shadow-md transition-colors"
                 >
-                    Оплатить {totalAmount.toFixed(2)} руб.
+                    Рассчитать {totalAmount.toFixed(2)} руб.
                 </button>
             )}
         </div>
