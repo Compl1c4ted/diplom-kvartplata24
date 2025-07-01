@@ -5,7 +5,7 @@ import PaymentApi, { Property, Receipt } from '../payments/PaymentAPI';
 const PaymentPage = () => {
     const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
 
-    // Загрузка недвижимостей
+    // 1. Загрузка всех недвижимостей
     const { 
         data: propertiesResponse, 
         isLoading: isPropertiesLoading, 
@@ -19,7 +19,7 @@ const PaymentPage = () => {
         ? propertiesResponse.data?.properties || []
         : [];
 
-    // Загрузка квитанций
+    // 2. Загрузка квитанций
     const { 
         data: unpaidReceiptsResponse,
         isLoading: isReceiptsLoading,
@@ -28,6 +28,7 @@ const PaymentPage = () => {
         queryKey: ['unpaidReceipts', selectedProperty?.id],
         queryFn: async () => {
             if (!selectedProperty?.id) return { status: 'success', data: [] };
+            
             const response = await PaymentApi.getUnpaidReceipts(selectedProperty.id);
             
             if (response.status === 'success' && response.data) {
@@ -50,41 +51,27 @@ const PaymentPage = () => {
         ? unpaidReceiptsResponse.data || []
         : [];
 
+    // 3. Расчет общей суммы
     const totalAmount = unpaidReceipts.reduce(
         (sum, receipt) => sum + (Number(receipt.amount) || 0), 
         0
     );
 
-    // Обработчик для кнопки
-    const handleProcess = async () => {
+    // 4. Обработчик расчета
+    const handleCalculate = async () => {
         if (!selectedProperty || unpaidReceipts.length === 0) return;
         
         try {
-            // Здесь может быть ваша бизнес-логика
-            // Например, создание заявки или подготовка данных
-            const processResults = await Promise.all(
-                unpaidReceipts.map(receipt => 
-                    PaymentApi.processReceipt(receipt.id) // Замените на ваш метод
-                )
-            );
-
-            const allSuccessful = processResults.every(
-                result => result.status === 'success'
-            );
-
-            if (allSuccessful) {
-                alert(`Обработано ${unpaidReceipts.length} квитанций на сумму ${totalAmount.toFixed(2)} руб.!`);
-                // queryClient.invalidateQueries(['unpaidReceipts', selectedProperty.id]);
-            } else {
-                const errorMessages = processResults
-                    .filter(result => result.status === 'error')
-                    .map(result => result.message)
-                    .join('\n');
-                alert(`Ошибки при обработке:\n${errorMessages}`);
-            }
+            // Здесь может быть ваша логика подготовки данных
+            // Например, формирование документа или экспорт
+            alert(`Рассчитано ${unpaidReceipts.length} квитанций на сумму ${totalAmount.toFixed(2)} руб.`);
+            
+            // Можно добавить вызов API для сохранения расчета
+            // const result = await PaymentApi.saveCalculation(unpaidReceipts);
+            
         } catch (error) {
-            console.error('Process error:', error);
-            alert('Произошла ошибка при обработке');
+            console.error('Calculation error:', error);
+            alert('Ошибка при расчете');
         }
     };
 
@@ -93,7 +80,7 @@ const PaymentPage = () => {
 
     return (
         <div className="max-w-2xl mx-auto p-4">
-            <h1 className="text-2xl font-bold mb-6 text-center">Управление квитанциями</h1>
+            <h1 className="text-2xl font-bold mb-6 text-center">Расчет квитанций</h1>
             
             {/* Выбор недвижимости */}
             <div className="mb-6">
@@ -145,13 +132,13 @@ const PaymentPage = () => {
                 </div>
             )}
 
-            {/* Кнопка обработки */}
+            {/* Кнопка расчета */}
             {selectedProperty && unpaidReceipts.length > 0 && (
                 <button
-                    onClick={handleProcess}
+                    onClick={handleCalculate}
                     className="w-full py-3 px-4 rounded-md text-white font-medium bg-blue-600 hover:bg-blue-700"
                 >
-                    Обработать квитанции ({totalAmount.toFixed(2)} руб.)
+                    Рассчитать ({totalAmount.toFixed(2)} руб.)
                 </button>
             )}
         </div>
