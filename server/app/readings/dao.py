@@ -25,6 +25,7 @@ class ReadingsDAO(BaseDAO):
         user_id: int, 
     ):
         async with async_session_maker() as session:
+
             """Получаем счетчик с проверкой прав доступа"""
             meter = await session.execute(
                 select(Meter)
@@ -101,42 +102,46 @@ class ReadingsDAO(BaseDAO):
         user_id: int,
     ):
         async with async_session_maker() as session:
-            """Добавление нового показания с проверкой прав и расчетом стоимости"""
             try:
                 # Получаем счетчик с проверкой прав
-                meter = await session.execute(
+                meter_result = await session.execute(
                     select(Meter)
-                    .join(Property)
-                    .where(
-                        Meter.id == meter_id,
-                        Property.user_id == user_id
-                    )
+                    .options(selectinload(Meter.property))
+                    .where(Meter.id == meter_id)
                 )
-                meter = meter.scalar_one_or_none()
-                
-                if not meter:
+                meter = meter_result.scalar_one_or_none()
+
+                if not meter or meter.property.user_id != user_id:
                     raise ValueError("Счетчик не найден или нет доступа")
 
-                # Рассчитываем потребление и стоимость
-                previous_value = meter.last_reading_value or 0
-                consumption = Decimal(current_value) - previous_value
-                total_cost = consumption * meter.tariff
+                # Получаем тариф по типу счетчика
+                tariff = await TariffDAO.find_by_type(meter.type)
+                if not tariff:
+                    raise ValueError(f"Тариф для типа '{meter.type}' не найден")
 
-                # Создаем запись показания
+                # Получаем предыдущее значение
+                last_reading = await cls.get_last_reading(meter_id)
+                previous_value = last_reading.current_value if last_reading else Decimal('0')
+
+                current_value_decimal = Decimal(str(current_value))
+                consumption = current_value_decimal - previous_value
+                total_cost = consumption * tariff.rate
+
                 new_reading = Reading(
                     meter_id=meter_id,
-                    current_value=current_value,
+                    current_value=current_value_decimal,
                     previous_value=previous_value,
-                    tariff=meter.tariff,
+                    tariff=tariff.rate,
                     total_cost=total_cost
                 )
                 session.add(new_reading)
 
-                # Обновляем последнее показание в счетчике
-                meter.last_reading_value = current_value
+                # Обновляем последнее значение в счетчике, если нужно
+                meter.last_reading_value = current_value_decimal
+
                 await session.commit()
                 await session.refresh(new_reading)
-                
+
                 return new_reading
 
             except Exception as e:
