@@ -9,6 +9,9 @@ from app.users.models import User
 from app.readings.models import Reading
 from app.users.dependencies import get_current_user
 from app.properties.dao import PropertiesDAO
+import logging
+
+logger = logging
 
 router = APIRouter(prefix="/readings", tags=["Readings"])
 
@@ -42,7 +45,6 @@ async def get_my_readings(
 async def add_reading(
     reading_data: SReadingCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
 ):
     """Добавление нового показания"""
     try:
@@ -50,7 +52,6 @@ async def add_reading(
             meter_id=reading_data.meter_id,
             current_value=reading_data.current_value,
             user_id=current_user.id,
-            session=db
         )
         return result
     except ValueError as e:
